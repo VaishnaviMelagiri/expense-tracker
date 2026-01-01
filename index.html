@@ -1,170 +1,217 @@
-import React, { useState, useEffect } from 'react';
-import { Trash2, TrendingUp, Calendar, DollarSign } from 'lucide-react';
-
-export default function ExpenseTracker() {
-  const [expenses, setExpenses] = useState([]);
-  const [productName, setProductName] = useState('');
-  const [amount, setAmount] = useState('');
-
-  useEffect(() => {
-    const stored = localStorage.getItem('vaishnavi_expenses');
-    if (stored) {
-      setExpenses(JSON.parse(stored));
-    }
-  }, []);
-
-  useEffect(() => {
-    localStorage.setItem('vaishnavi_expenses', JSON.stringify(expenses));
-  }, [expenses]);
-
-  const addExpense = () => {
-    if (!productName.trim() || !amount || parseFloat(amount) <= 0) {
-      alert('Please enter valid product name and amount');
-      return;
-    }
-
-    const newExpense = {
-      id: Date.now(),
-      product: productName.trim(),
-      amount: parseFloat(amount),
-      timestamp: Date.now(),
-      date: new Date().toLocaleDateString()
-    };
-
-    setExpenses([newExpense, ...expenses]);
-    setProductName('');
-    setAmount('');
-  };
-
-  const deleteExpense = (id) => {
-    if (confirm('Delete this expense?')) {
-      setExpenses(expenses.filter(e => e.id !== id));
-    }
-  };
-
-  const calculateTotal = (days) => {
-    const cutoff = Date.now() - (days * 24 * 60 * 60 * 1000);
-    return expenses
-      .filter(e => e.timestamp >= cutoff)
-      .reduce((sum, e) => sum + e.amount, 0);
-  };
-
-  const weeklyTotal = calculateTotal(7);
-  const monthlyTotal = calculateTotal(30);
-  const totalExpense = expenses.reduce((sum, e) => sum + e.amount, 0);
-
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-400 via-pink-300 to-orange-300 p-4 md:p-8">
-      <div className="max-w-4xl mx-auto">
-        <div className="bg-white rounded-3xl shadow-2xl p-6 mb-6 text-center">
-          <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-2">
-            Vaishnavi Expense Tracker
-          </h1>
-          <p className="text-gray-600">Track your daily spending with ease</p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          <div className="bg-gradient-to-br from-blue-400 to-blue-600 rounded-2xl shadow-lg p-5 text-white">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm opacity-90 mb-1">Weekly Total</p>
-                <p className="text-3xl font-bold">Rs {weeklyTotal.toFixed(2)}</p>
-              </div>
-              <Calendar className="w-12 h-12 opacity-80" />
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vaishnavi Expense Tracker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body>
+    <div class="min-h-screen bg-gradient-to-br from-purple-400 via-pink-300 to-orange-300 p-4 md:p-8">
+        <div class="max-w-4xl mx-auto">
+            <div class="bg-white rounded-3xl shadow-2xl p-6 mb-6 text-center">
+                <h1 class="text-4xl md:text-5xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-2">
+                    Vaishnavi Expense Tracker
+                </h1>
+                <p class="text-gray-600">Track your daily spending with ease</p>
             </div>
-          </div>
 
-          <div className="bg-gradient-to-br from-green-400 to-green-600 rounded-2xl shadow-lg p-5 text-white">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm opacity-90 mb-1">Monthly Total</p>
-                <p className="text-3xl font-bold">Rs {monthlyTotal.toFixed(2)}</p>
-              </div>
-              <TrendingUp className="w-12 h-12 opacity-80" />
-            </div>
-          </div>
-
-          <div className="bg-gradient-to-br from-orange-400 to-red-500 rounded-2xl shadow-lg p-5 text-white">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm opacity-90 mb-1">All Time Total</p>
-                <p className="text-3xl font-bold">Rs {totalExpense.toFixed(2)}</p>
-              </div>
-              <DollarSign className="w-12 h-12 opacity-80" />
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-3xl shadow-2xl p-6 mb-6">
-          <h2 className="text-2xl font-bold text-gray-800 mb-4">Add New Expense</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-            <input
-              type="text"
-              placeholder="Product or Purpose"
-              value={productName}
-              onChange={(e) => setProductName(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && addExpense()}
-              className="px-4 py-3 border-2 border-purple-300 rounded-xl focus:outline-none focus:border-purple-500 text-lg"
-            />
-            <input
-              type="number"
-              placeholder="Amount in Rs"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && addExpense()}
-              className="px-4 py-3 border-2 border-pink-300 rounded-xl focus:outline-none focus:border-pink-500 text-lg"
-              step="0.01"
-            />
-          </div>
-          <button
-            onClick={addExpense}
-            className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold py-3 rounded-xl hover:from-purple-600 hover:to-pink-600 transition-all transform hover:scale-105 shadow-lg text-lg"
-          >
-            Add Expense
-          </button>
-        </div>
-
-        <div className="bg-white rounded-3xl shadow-2xl p-6">
-          <h2 className="text-2xl font-bold text-gray-800 mb-4">Recent Expenses</h2>
-          
-          {expenses.length === 0 ? (
-            <div className="text-center py-12">
-              <div className="text-6xl mb-4">🎉</div>
-              <p className="text-gray-500 text-lg">No expenses yet! Start tracking now.</p>
-            </div>
-          ) : (
-            <div className="space-y-3 max-h-96 overflow-y-auto">
-              {expenses.map((expense) => (
-                <div
-                  key={expense.id}
-                  className="flex items-center justify-between bg-gradient-to-r from-purple-50 to-pink-50 p-4 rounded-xl border-2 border-purple-200 hover:border-purple-400 transition-all"
-                >
-                  <div className="flex-1">
-                    <h3 className="font-bold text-gray-800 text-lg">{expense.product}</h3>
-                    <p className="text-sm text-gray-500">{expense.date}</p>
-                  </div>
-                  <div className="flex items-center gap-4">
-                    <span className="text-2xl font-bold text-purple-600">
-                      Rs {expense.amount.toFixed(2)}
-                    </span>
-                    <button
-                      onClick={() => deleteExpense(expense.id)}
-                      className="bg-red-500 text-white p-2 rounded-lg hover:bg-red-600 transition-colors"
-                      title="Delete"
-                    >
-                      <Trash2 className="w-5 h-5" />
-                    </button>
-                  </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <div class="bg-gradient-to-br from-blue-400 to-blue-600 rounded-2xl shadow-lg p-5 text-white">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm opacity-90 mb-1">Weekly Total</p>
+                            <p class="text-3xl font-bold" id="weeklyTotal">Rs 0.00</p>
+                        </div>
+                        <svg class="w-12 h-12 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2" stroke-width="2"/>
+                            <line x1="16" y1="2" x2="16" y2="6" stroke-width="2"/>
+                            <line x1="8" y1="2" x2="8" y2="6" stroke-width="2"/>
+                            <line x1="3" y1="10" x2="21" y2="10" stroke-width="2"/>
+                        </svg>
+                    </div>
                 </div>
-              ))}
-            </div>
-          )}
-        </div>
 
-        <div className="text-center mt-6 text-white">
-          <p className="text-sm opacity-90">Stay on budget, stay happy!</p>
+                <div class="bg-gradient-to-br from-green-400 to-green-600 rounded-2xl shadow-lg p-5 text-white">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm opacity-90 mb-1">Monthly Total</p>
+                            <p class="text-3xl font-bold" id="monthlyTotal">Rs 0.00</p>
+                        </div>
+                        <svg class="w-12 h-12 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" stroke-width="2"/>
+                            <polyline points="17 6 23 6 23 12" stroke-width="2"/>
+                        </svg>
+                    </div>
+                </div>
+
+                <div class="bg-gradient-to-br from-orange-400 to-red-500 rounded-2xl shadow-lg p-5 text-white">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm opacity-90 mb-1">All Time Total</p>
+                            <p class="text-3xl font-bold" id="allTimeTotal">Rs 0.00</p>
+                        </div>
+                        <svg class="w-12 h-12 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <line x1="12" y1="1" x2="12" y2="23" stroke-width="2"/>
+                            <path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" stroke-width="2"/>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-3xl shadow-2xl p-6 mb-6">
+                <h2 class="text-2xl font-bold text-gray-800 mb-4">Add New Expense</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <input
+                        type="text"
+                        id="productName"
+                        placeholder="Product or Purpose (e.g., Groceries)"
+                        class="px-4 py-3 border-2 border-purple-300 rounded-xl focus:outline-none focus:border-purple-500 text-lg"
+                    />
+                    <input
+                        type="number"
+                        id="amount"
+                        placeholder="Amount in Rs"
+                        class="px-4 py-3 border-2 border-pink-300 rounded-xl focus:outline-none focus:border-pink-500 text-lg"
+                        step="0.01"
+                    />
+                </div>
+                <button
+                    id="addBtn"
+                    class="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold py-3 rounded-xl hover:from-purple-600 hover:to-pink-600 transition-all transform hover:scale-105 shadow-lg text-lg cursor-pointer"
+                >
+                    Add Expense
+                </button>
+            </div>
+
+            <div class="bg-white rounded-3xl shadow-2xl p-6">
+                <h2 class="text-2xl font-bold text-gray-800 mb-4">Recent Expenses</h2>
+                <div id="expensesList" class="space-y-3 max-h-96 overflow-y-auto">
+                    <div class="text-center py-12">
+                        <div class="text-6xl mb-4">🎉</div>
+                        <p class="text-gray-500 text-lg">No expenses yet! Start tracking now.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="text-center mt-6 text-white">
+                <p class="text-sm opacity-90">Stay on budget, stay happy!</p>
+            </div>
         </div>
-      </div>
     </div>
-  );
-}
+
+    <script>
+        let expenses = [];
+
+        function loadExpenses() {
+            const stored = localStorage.getItem('vaishnavi_expenses');
+            if (stored) {
+                expenses = JSON.parse(stored);
+                expenses.sort((a, b) => b.timestamp - a.timestamp);
+            }
+            updateDisplay();
+        }
+
+        function saveExpenses() {
+            localStorage.setItem('vaishnavi_expenses', JSON.stringify(expenses));
+        }
+
+        function addExpense() {
+            const productInput = document.getElementById('productName');
+            const amountInput = document.getElementById('amount');
+            
+            const product = productInput.value.trim();
+            const amount = parseFloat(amountInput.value);
+
+            if (!product || !amount || amount <= 0) {
+                alert('Please enter valid product name and amount!');
+                return;
+            }
+
+            const newExpense = {
+                id: Date.now(),
+                product: product,
+                amount: amount,
+                timestamp: Date.now(),
+                date: new Date().toLocaleDateString()
+            };
+
+            expenses.unshift(newExpense);
+            saveExpenses();
+            updateDisplay();
+
+            productInput.value = '';
+            amountInput.value = '';
+            productInput.focus();
+        }
+
+        function deleteExpense(id) {
+            if (confirm('Delete this expense?')) {
+                expenses = expenses.filter(e => e.id !== id);
+                saveExpenses();
+                updateDisplay();
+            }
+        }
+
+        function calculateTotal(days) {
+            const cutoff = Date.now() - (days * 24 * 60 * 60 * 1000);
+            return expenses
+                .filter(e => e.timestamp >= cutoff)
+                .reduce((sum, e) => sum + e.amount, 0);
+        }
+
+        function updateDisplay() {
+            document.getElementById('weeklyTotal').textContent = 'Rs ' + calculateTotal(7).toFixed(2);
+            document.getElementById('monthlyTotal').textContent = 'Rs ' + calculateTotal(30).toFixed(2);
+            const allTime = expenses.reduce((sum, e) => sum + e.amount, 0);
+            document.getElementById('allTimeTotal').textContent = 'Rs ' + allTime.toFixed(2);
+
+            const listContainer = document.getElementById('expensesList');
+            
+            if (expenses.length === 0) {
+                listContainer.innerHTML = `
+                    <div class="text-center py-12">
+                        <div class="text-6xl mb-4">🎉</div>
+                        <p class="text-gray-500 text-lg">No expenses yet! Start tracking now.</p>
+                    </div>
+                `;
+            } else {
+                listContainer.innerHTML = expenses.map(expense => `
+                    <div class="flex items-center justify-between bg-gradient-to-r from-purple-50 to-pink-50 p-4 rounded-xl border-2 border-purple-200 hover:border-purple-400 transition-all">
+                        <div class="flex-1">
+                            <h3 class="font-bold text-gray-800 text-lg">${expense.product}</h3>
+                            <p class="text-sm text-gray-500">${expense.date}</p>
+                        </div>
+                        <div class="flex items-center gap-4">
+                            <span class="text-2xl font-bold text-purple-600">Rs ${expense.amount.toFixed(2)}</span>
+                            <button
+                                onclick="deleteExpense(${expense.id})"
+                                class="bg-red-500 text-white p-2 rounded-lg hover:bg-red-600 transition-colors cursor-pointer"
+                                title="Delete"
+                            >
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2M10 11v6M14 11v6" stroke-width="2"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                `).join('');
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            loadExpenses();
+            
+            document.getElementById('addBtn').addEventListener('click', addExpense);
+            
+            document.getElementById('productName').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') addExpense();
+            });
+            
+            document.getElementById('amount').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') addExpense();
+            });
+        });
+    </script>
+</body>
+</html>
