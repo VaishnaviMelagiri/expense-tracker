@@ -1,0 +1,205 @@
+import React, { useState, useEffect } from 'react';
+import { Trash2, TrendingUp, Calendar, DollarSign } from 'lucide-react';
+
+export default function ExpenseTracker() {
+  const [expenses, setExpenses] = useState([]);
+  const [productName, setProductName] = useState('');
+  const [amount, setAmount] = useState('');
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    loadExpenses();
+  }, []);
+
+  const loadExpenses = async () => {
+    try {
+      const result = await window.storage.list('expense:');
+      if (result && result.keys) {
+        const loadedExpenses = await Promise.all(
+          result.keys.map(async (key) => {
+            const data = await window.storage.get(key);
+            return data ? JSON.parse(data.value) : null;
+          })
+        );
+        setExpenses(loadedExpenses.filter(Boolean).sort((a, b) => b.timestamp - a.timestamp));
+      }
+    } catch (error) {
+      console.log('Starting fresh - no expenses yet');
+      setExpenses([]);
+    }
+    setLoading(false);
+  };
+
+  const addExpense = async () => {
+    if (!productName.trim() || !amount || parseFloat(amount) <= 0) {
+      alert('Please enter valid product name and amount!');
+      return;
+    }
+
+    const newExpense = {
+      id: Date.now().toString(),
+      product: productName.trim(),
+      amount: parseFloat(amount),
+      timestamp: Date.now(),
+      date: new Date().toLocaleDateString()
+    };
+
+    try {
+      await window.storage.set(`expense:${newExpense.id}`, JSON.stringify(newExpense));
+      setExpenses([newExpense, ...expenses]);
+      setProductName('');
+      setAmount('');
+    } catch (error) {
+      alert('Failed to save expense. Please try again.');
+    }
+  };
+
+  const deleteExpense = async (id) => {
+    try {
+      await window.storage.delete(`expense:${id}`);
+      setExpenses(expenses.filter(e => e.id !== id));
+    } catch (error) {
+      alert('Failed to delete expense.');
+    }
+  };
+
+  const calculateTotal = (days) => {
+    const now = Date.now();
+    const cutoff = now - (days * 24 * 60 * 60 * 1000);
+    return expenses
+      .filter(e => e.timestamp >= cutoff)
+      .reduce((sum, e) => sum + e.amount, 0);
+  };
+
+  const weeklyTotal = calculateTotal(7);
+  const monthlyTotal = calculateTotal(30);
+  const totalExpense = expenses.reduce((sum, e) => sum + e.amount, 0);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-400 via-pink-300 to-orange-300 flex items-center justify-center">
+        <div className="text-white text-2xl font-bold">Loading...</div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-purple-400 via-pink-300 to-orange-300 p-4 md:p-8">
+      <div className="max-w-4xl mx-auto">
+        {/* Header */}
+        <div className="bg-white rounded-3xl shadow-2xl p-6 mb-6 text-center">
+          <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-2">
+            💰 Vaishnavi's Expenses 💰
+          </h1>
+          <p className="text-gray-600">Track your daily spending with ease!</p>
+        </div>
+
+        {/* Summary Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <div className="bg-gradient-to-br from-blue-400 to-blue-600 rounded-2xl shadow-lg p-5 text-white">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm opacity-90 mb-1">Weekly Total</p>
+                <p className="text-3xl font-bold">₹{weeklyTotal.toFixed(2)}</p>
+              </div>
+              <Calendar className="w-12 h-12 opacity-80" />
+            </div>
+          </div>
+
+          <div className="bg-gradient-to-br from-green-400 to-green-600 rounded-2xl shadow-lg p-5 text-white">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm opacity-90 mb-1">Monthly Total</p>
+                <p className="text-3xl font-bold">₹{monthlyTotal.toFixed(2)}</p>
+              </div>
+              <TrendingUp className="w-12 h-12 opacity-80" />
+            </div>
+          </div>
+
+          <div className="bg-gradient-to-br from-orange-400 to-red-500 rounded-2xl shadow-lg p-5 text-white">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm opacity-90 mb-1">All Time Total</p>
+                <p className="text-3xl font-bold">₹{totalExpense.toFixed(2)}</p>
+              </div>
+              <DollarSign className="w-12 h-12 opacity-80" />
+            </div>
+          </div>
+        </div>
+
+        {/* Add Expense Form */}
+        <div className="bg-white rounded-3xl shadow-2xl p-6 mb-6">
+          <h2 className="text-2xl font-bold text-gray-800 mb-4">Add New Expense</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <input
+              type="text"
+              placeholder="Product / Purpose (e.g., Groceries)"
+              value={productName}
+              onChange={(e) => setProductName(e.target.value)}
+              onKeyPress={(e) => e.key === 'Enter' && addExpense()}
+              className="px-4 py-3 border-2 border-purple-300 rounded-xl focus:outline-none focus:border-purple-500 text-lg"
+            />
+            <input
+              type="number"
+              placeholder="Amount (₹)"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              onKeyPress={(e) => e.key === 'Enter' && addExpense()}
+              className="px-4 py-3 border-2 border-pink-300 rounded-xl focus:outline-none focus:border-pink-500 text-lg"
+              step="0.01"
+            />
+          </div>
+          <button
+            onClick={addExpense}
+            className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold py-3 rounded-xl hover:from-purple-600 hover:to-pink-600 transition-all transform hover:scale-105 shadow-lg text-lg"
+          >
+            ✨ Add Expense ✨
+          </button>
+        </div>
+
+        {/* Expenses List */}
+        <div className="bg-white rounded-3xl shadow-2xl p-6">
+          <h2 className="text-2xl font-bold text-gray-800 mb-4">Recent Expenses</h2>
+          
+          {expenses.length === 0 ? (
+            <div className="text-center py-12">
+              <div className="text-6xl mb-4">🎉</div>
+              <p className="text-gray-500 text-lg">No expenses yet! Start tracking now.</p>
+            </div>
+          ) : (
+            <div className="space-y-3 max-h-96 overflow-y-auto">
+              {expenses.map((expense) => (
+                <div
+                  key={expense.id}
+                  className="flex items-center justify-between bg-gradient-to-r from-purple-50 to-pink-50 p-4 rounded-xl border-2 border-purple-200 hover:border-purple-400 transition-all"
+                >
+                  <div className="flex-1">
+                    <h3 className="font-bold text-gray-800 text-lg">{expense.product}</h3>
+                    <p className="text-sm text-gray-500">{expense.date}</p>
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <span className="text-2xl font-bold text-purple-600">
+                      ₹{expense.amount.toFixed(2)}
+                    </span>
+                    <button
+                      onClick={() => deleteExpense(expense.id)}
+                      className="bg-red-500 text-white p-2 rounded-lg hover:bg-red-600 transition-colors"
+                      title="Delete"
+                    >
+                      <Trash2 className="w-5 h-5" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="text-center mt-6 text-white">
+          <p className="text-sm opacity-90">💝 Stay on budget, stay happy! 💝</p>
+        </div>
+      </div>
+    </div>
+  );
+}
